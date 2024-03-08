@@ -1,41 +1,45 @@
 import 'package:belajardigowa/models/usermodel.dart';
 import 'package:belajardigowa/services/userService.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({Key? key}) : super(key: key);
 
   @override
-  State<UserPage> createState() => _UserPageState();
+  State<UserPage> createState() => _UserModelPageState();
 }
 
-class _UserPageState extends State<UserPage> {
-  late List<UserModel> _users = [];
-  late List<UserModel> _filteredUsers = [];
+class _UserModelPageState extends State<UserPage> {
+  late List<UserModel> _userModels = [];
+  late List<UserModel> _filteredUserModels = [];
 
   TextEditingController _searchController = TextEditingController();
+
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _getUsers();
+    _getUserModels();
   }
 
-  void _getUsers() async {
-    List<UserModel> users = await UserService().getUsers();
+  void _getUserModels() async {
+    List<UserModel> userModels = await UserService().getUsers();
     setState(() {
-      _users = users;
-      _filteredUsers = users;
+      _userModels = userModels;
+      _filteredUserModels = userModels;
+      _isLoading = false;
     });
   }
 
-  void _filterUsers(String query) {
-    List<UserModel> filteredList = _users.where((user) {
-      return user.name.toLowerCase().contains(query.toLowerCase());
+  void _filterUserModels(String query) {
+    List<UserModel> filteredList = _userModels.where((userModel) {
+      return userModel.name.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
     setState(() {
-      _filteredUsers = filteredList;
+      _filteredUserModels = filteredList;
     });
   }
 
@@ -66,34 +70,68 @@ class _UserPageState extends State<UserPage> {
                   icon: Icon(Icons.clear),
                   onPressed: () {
                     _searchController.clear();
-                    _filterUsers('');
+                    _filterUserModels('');
                   },
                 ),
               ),
               onChanged: (value) {
-                _filterUsers(value);
+                _filterUserModels(value);
               },
             ),
           ),
-          Expanded(
-            child: _filteredUsers.isEmpty
-                ? const Center(
-                    child: Text('No users found.'),
-                  )
-                : ListView.builder(
-                    itemCount: _filteredUsers.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return Card(
-                        child: ListTile(
-                          title: Text(_filteredUsers[index].name),
-                          subtitle: Text(_filteredUsers[index].email),
-                          leading: Icon(Icons.person),
+          _isLoading
+              ? _buildLoadingWidget()
+              : Expanded(
+                  child: _filteredUserModels.isEmpty
+                      ? const Center(
+                          child: Text('No Users found.'),
+                        )
+                      : ListView.builder(
+                          itemCount: _filteredUserModels.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return Card(
+                              child: ListTile(
+                                title: Text(_filteredUserModels[index].name),
+                                subtitle:
+                                    Text(_filteredUserModels[index].email),
+                                leading: Icon(Icons.person),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-          ),
+                ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingWidget() {
+    return Expanded(
+      child: ListView.builder(
+        itemCount: 5,
+        itemBuilder: (BuildContext context, int index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Shimmer.fromColors(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 30.0,
+                ),
+                title: Container(
+                  height: 15.0,
+                  color: Colors.white,
+                ),
+                subtitle: Container(
+                  height: 10.0,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
